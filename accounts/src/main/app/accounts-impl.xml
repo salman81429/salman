@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:api-platform-gw="http://www.mulesoft.org/schema/mule/api-platform-gw" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/api-platform-gw http://www.mulesoft.org/schema/mule/api-platform-gw/current/mule-api-platform-gw.xsd">
+	<api-platform-gw:api apiName="groupId:a8f103c6-b366-4cf2-a235-c643c2db975c:assetId:accounts" version="v1:16046959" flowRef="accounts-main" create="true" doc:name="API Autodiscovery"/>
+	<flow name="get-accoundetails">
+		<db:select config-ref="MySQL_Configuration" doc:name="Database">
+			<db:parameterized-query><![CDATA[select * from accounts where city= #[message.inboundProperties.'http.query.params'.city]]]></db:parameterized-query>
+		</db:select>
+		<dw:transform-message doc:name="Transform Message">
+			<dw:input-payload doc:sample="sample_data\list_map.dwl"/>
+			<dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+payload map ((payload01 , indexOfPayload01) -> {
+	accountID: payload01.accountID,
+	city: payload01.city,
+	name: payload01.name,
+	street: payload01.street,
+	postal: payload01.postal as :number,
+	state: payload01.state,	
+	country: payload01.country
+})]]></dw:set-payload>
+		</dw:transform-message>
+		<logger message="#[payload]" level="INFO" doc:name="Logger"/>
+	</flow>
+	<flow name="post-arecord">
+		<http:listener config-ref="accounts-httpListenerConfig" path="/TEST" doc:name="HTTP"/>
+		<dw:transform-message doc:name="Transform Message">
+			<dw:input-payload doc:sample="sample_data\json_1.json"/>
+			<dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	name: payload.name,
+	street: payload.street,
+	city: payload.city,
+	state: payload.state,
+	postal: payload.postal,
+	country: payload.country
+	
+	}]]></dw:set-payload>
+		</dw:transform-message>
+		<db:insert config-ref="MySQL_Configuration" doc:name="Database">
+			<db:parameterized-query><![CDATA[insert into accounts(name,street,city,state,postal,country) values (#[payload.name],#[payload.street],#[payload.city],#[payload.state],#[payload.postal],#[payload.country])]]></db:parameterized-query>
+
+
+
+
+		</db:insert>
+		<dw:transform-message doc:name="Transform Message">
+			<dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	message : "record insert successfully" when payload == 1 otherwise "record was mo inserted successfilyt" 
+}]]></dw:set-payload>
+		</dw:transform-message>
+
+		<logger level="INFO" doc:name="Logger" message="#[payload]"/>
+	</flow>
+</mule>

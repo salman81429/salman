@@ -1,0 +1,61 @@
+#%RAML 1.0
+baseUri: https://anypoint.mulesoft.com/mocking/api/v1/links/36974dcc-b614-4954-b25f-3b228388d8ee/ # 
+title: accounts
+types:
+  account-type: !include accounts-datatype.raml
+traits:
+  error-trait: !include error-trait.raml
+
+/accounts:
+  get:
+    is:
+      - error-trait:
+    queryParameters:
+      city:
+        type: string  
+        required: true    
+    responses:
+      200:
+        body:
+          application/json:
+            type: account-type[]
+            examples: !include accounts-examples.raml 
+  post:
+    body:
+      application/json:
+        type: account-type
+        example: !include account-example.raml
+    responses:
+      201:
+        body:
+          application/json:
+            example:
+              message: data successfully inserted
+
+        
+          
+      
+
+        
+        
+               
+          
+       
+  
+      
+
+
+
+    
+  
+    
+    
+        
+          
+      
+          
+
+
+      
+  
+    
